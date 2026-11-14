@@ -1,0 +1,7 @@
+{
+  "$schema":"../gen/schemas/desktop-schema.json",
+  "identifier":"main-capability",
+  "description":"Local window events only. No generic shell, HTTP, or filesystem access exposed to JavaScript.",
+  "windows":["main"],
+  "permissions":["core:default"]
+}

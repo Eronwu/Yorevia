@@ -1,0 +1,20 @@
+{
+  "name": "yorevia",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "A local-first life atlas connecting your memories and the people who shared them.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy_static.mjs",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test tests/frontend.test.mjs",
+    "preview": "python scripts/preview.py",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "python scripts/build_sidecar.py && tauri build --config src-tauri/tauri.release.conf.json"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.0",
+    "typescript": "5.8.3"
+  }
+}

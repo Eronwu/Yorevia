@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Yorevia",
+  "version": "0.1.0-alpha.1",
+  "identifier": "io.yorevia.desktop",
+  "build": {
+    "beforeDevCommand": "npm run build && node scripts/serve.mjs",
+    "devUrl": "http://127.0.0.1:4173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [{"label":"main","title":"Yorevia · 往途","width":1320,"height":900,"minWidth":920,"minHeight":680,"dragDropEnabled":false}],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ipc: http://ipc.localhost; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Photography",
+    "shortDescription": "Your memories, your people, your files.",
+    "longDescription": "A private, offline-first life atlas connecting your photos, stories and the people who shared them.",
+    "icon": ["icons/32x32.png","icons/128x128.png","icons/128x128@2x.png","icons/icon.icns","icons/icon.ico"],
+    "macOS": {"minimumSystemVersion":"13.0"},
+    "windows": {"nsis":{"displayLanguageSelector":true,"languages":["SimpChinese","English"]}}
+  }
+}

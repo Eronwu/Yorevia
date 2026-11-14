@@ -1,0 +1,16 @@
+[package]
+name = "yorevia"
+version = "0.1.0-alpha.1"
+description = "A local-first atlas of a life"
+authors = ["Yorevia contributors"]
+license = "Apache-2.0"
+edition = "2021"
+rust-version = "1.90"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde_json = "1"

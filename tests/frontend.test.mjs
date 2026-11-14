@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {escapeHTML,dateLabel,dateEvidence,groupAssets,graphPositions} from '../dist/domain.js';
+test('untrusted text never becomes active HTML',()=>assert.equal(escapeHTML('<img onerror="x">&'), '&lt;img onerror=&quot;x&quot;&gt;&amp;'));
+test('unknown dates are explicit',()=>assert.equal(dateLabel(null),'时间待确认'));
+test('filename inference is labelled',()=>assert.equal(dateEvidence('filename'),'文件名推测'));
+test('calendar date is not timezone shifted',()=>assert.equal(dateLabel('2014-01-01T00:10:00'),'2014 年 1 月 1 日'));
+test('grouping preserves undated material',()=>assert.equal(groupAssets([{captured_at:null},{captured_at:null}])[0][1].length,2));
+test('graph layout handles zero and one node',()=>{assert.deepEqual(graphPositions(0),[]);assert.deepEqual(graphPositions(1),[{x:480,y:290}]);});
+test('graph layout stays within canvas',()=>{for(const p of graphPositions(24))assert.ok(p.x>=0&&p.x<=960&&p.y>=0&&p.y<=580);});

@@ -1,0 +1,48 @@
+# Toolchains and generated output
+node_modules/
+dist/
+.venv/
+venv/
+build/
+__pycache__/
+.pytest_cache/
+*.pyc
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/*
+!src-tauri/binaries/.gitkeep
+*.spec
+# Downloaded, checksummed AI weights never belong in Git history.
+models/*.onnx
+models/*.part
+models/*.LICENSE
+# Private data must NEVER be committed.
+YoreviaVault/
+**/YoreviaVault/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+.env
+.env.*
+!.env.example
+vaults/
+private-data/
+originals/
+exports/
+*.heic
+*.heif
+*.jpg
+*.jpeg
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+.DS_Store
+Thumbs.db
+# Built local artifacts
+Yorevia-visual-demo.html
+*.bundle
+*.zip
+*.log
