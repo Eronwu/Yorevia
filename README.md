@@ -6,14 +6,14 @@
 
 Local-first · Open source · Your memories, your files
 
-[English](README.en.md) · [验证记录](docs/VALIDATION.md) · [架构](docs/ARCHITECTURE.md) · [Mac / Windows 构建](docs/BUILD.md)
+[English](README.en.md) · [最新原生验证](docs/NATIVE-VALIDATION-2026-11-15.md) · [架构](docs/ARCHITECTURE.md) · [Mac / Windows 构建](docs/BUILD.md)
 
 </div>
 
 ![Yorevia 人生长廊 — 虚构示例](docs/screenshots/timeline-demo.png)
 
 > **0.1.0-alpha.1 / 工程预览，不是已验收的发行版。**
-> 已实现本地媒体索引、人生时间轴、人物管理与关系图谱、故事和便携导出。人脸模型有实际接入代码，但本次环境没有安装模型权重，未执行真实模型推理或准确率评估。macOS / Windows 打包工程和 CI 已配置，尚未在本次交付中运行、签名或真机验收。GitHub 同步仍需在具备写权限的环境执行。
+> 截至 2026-11-15，源码已同步到 [Eronwu/Yorevia](https://github.com/Eronwu/Yorevia)，[三平台原生 CI](https://github.com/Eronwu/Yorevia/actions/runs/43706954518) 已成功生成 Apple Silicon、Intel Mac 和 Windows x64 安装包。官方 YuNet / SFace 权重已校验并完成合成输入推理测试，**不代表真人识别或跨年龄准确率已验证**。Apple Silicon 真机已验证启动、原生目录选择、资料库创建、中文故事保存与重启后读回；Windows / Intel 真机安装及完整业务验收仍待完成。安装包为未正式签名、未公证的 Alpha，详见[本轮验证记录](docs/NATIVE-VALIDATION-2026-11-15.md)。
 
 ## 一个不要求你从空白页开始的人生档案
 
@@ -83,17 +83,21 @@ python scripts/fetch_models.py
 
 工程使用 **Tauri 2 + TypeScript 界面 + Python/OpenCV 本地引擎**。Alpha 前端没有 React 和远程资源依赖；这是为缩小初版依赖面而作的实现选择，见 [ADR-001](docs/ARCHITECTURE.md#adr-001-独立架构与运行时选择)。
 
-已配置三种原生构建目标：
+2026-11-15 三种原生构建目标均已通过 CI（安装包代码提交：`3a852e4`）：
 
-| 目标 | CI Runner | 预期产物 | 本次状态 |
+| 目标 | CI Runner | 产物 | 验证状态 |
 |---|---|---|---|
-| macOS Apple Silicon | `macos-15` | `.app` / `.dmg` | 未构建、未验收 |
-| macOS Intel | `macos-15-intel` | `.app` / `.dmg` | 未构建、未验收 |
-| Windows x64 | `windows-2022` | NSIS `.exe` | 未构建、未验收 |
+| macOS Apple Silicon | `macos-15` | `.app` / `.dmg` | CI 通过；真机基础流程与故事重启持久化通过 |
+| macOS Intel | `macos-15-intel` | `.app` / `.dmg` | CI 通过；真机安装验收待完成 |
+| Windows x64 | `windows-2022` | NSIS `.exe` | CI 通过；真机安装验收待完成 |
 
-目标是安装包内携带 Python 引擎与模型，不要求最终使用者安装 Python。该打包流程仍需实际 CI 与真机验证。Windows ARM64 暂不在矩阵中。
+安装包内已携带 Python 引擎与模型，三平台打包引擎 smoke 测试均通过，不要求最终使用者另装 Python。Windows ARM64 暂不在矩阵中。
+
+[下载本轮 CI 安装包](https://github.com/Eronwu/Yorevia/actions/runs/43706954518)（需登录 GitHub；Artifacts 保留至 2026-11-29）。目前没有正式 Release。Mac 仅有 linker adhoc 签名，完整 `codesign --verify --deep --strict` 校验不通过；这不是开发者签名或 Apple 公证。Windows 同样未签名。完整照片导入、真人识别效果、导出和大资料库性能仍待真机验收。
 
 ## 同步到 GitHub
+
+本仓库已完成源码同步；以下是后续维护或在新环境发布时使用的命令，不表示同步仍未完成。
 
 先安装 Git、GitHub CLI，并用你自己的账户在本机登录。不要把访问令牌发到聊天或写入仓库。
 
@@ -126,7 +130,7 @@ python scripts/check_browser.py --chromium /path/to/chromium
 
 真实模型测试缺少权重时会明确跳过；发布构建用 `YOREVIA_REQUIRE_MODELS=1` 强制要求模型可运行。测试中的伪造向量仅用于验证聚类流程，不表示真人识别效果。
 
-阅读 [验证记录](docs/VALIDATION.md)、[构建步骤](docs/BUILD.md)、[路线与验收标准](docs/ROADMAP.md) 和 [贡献说明](CONTRIBUTING.md)。
+阅读 [最新原生验证](docs/NATIVE-VALIDATION-2026-11-15.md)、[构建步骤](docs/BUILD.md)、[路线与验收标准](docs/ROADMAP.md) 和 [贡献说明](CONTRIBUTING.md)。
 
 ## 许可证
 
