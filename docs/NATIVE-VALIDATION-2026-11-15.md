@@ -15,6 +15,8 @@ DMG without modifying system security settings. Native tauri://localhost
 WebView rendered successfully. The packaged engine smoke returned installed
 models and telemetry=false. Native folder picker created an isolated test vault.
 A synthetic Chinese story was saved and read back in the story list.
+After quitting and relaunching the app, reopening the same vault preserved
+the story and its Chinese text. The app currently requires reselecting the vault.
 No private photographs were imported or uploaded.
 
 DMG SHA256:
@@ -30,6 +32,6 @@ signature; codesign --verify --deep --strict reports an unsealed resource issue.
 Do not present this as a signed or frictionless consumer distribution.
 No Gatekeeper or other system-security bypass was performed.
 Windows and Intel outputs passed CI but have not been manually installed on
-physical machines. Full photo import, human-face accuracy, export, restart
-persistence and large-library performance remain manual acceptance work.
+physical machines. Full photo import, human-face accuracy, export and
+large-library performance remain manual acceptance work.
 The model test demonstrates real-weight plumbing, not recognition accuracy.
