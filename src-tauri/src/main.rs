@@ -63,7 +63,7 @@ struct AppState { engine: Mutex<Option<Engine>>, granted_roots: Mutex<HashSet<Pa
 fn allowed_method(method: &str) -> bool {
     matches!(method, "status"|"vault.open"|"summary"|"source.add"|"scan.start"|"faces.start"|"job.status"|"job.cancel"|
         "timeline"|"people"|"graph"|"image"|"asset.detail"|"asset.date"|"person.rename"|"person.merge"|
-        "person.faces"|"face.split"|"relationship.add"|"story.save"|"stories"|"export"|"biometrics.erase")
+        "person.faces"|"face.split"|"relationship.add"|"story.save"|"stories"|"export"|"biometrics.erase"|"baidu.status"|"baidu.connect"|"baidu.disconnect"|"baidu.list"|"baidu.import")
 }
 fn engine_call(app: &tauri::AppHandle, method: &str, params: Value) -> Result<Value, String> {
     let state = app.state::<AppState>();
@@ -89,8 +89,9 @@ async fn choose_folder(app: tauri::AppHandle, title: String) -> Result<Option<St
 async fn rpc(app: tauri::AppHandle, method: String, params: Value) -> Result<Value, String> {
     if !allowed_method(&method) { return Err("Operation is not permitted".into()); }
     if !params.is_object() { return Err("Parameters must be an object".into()); }
-    if method == "vault.open" || method == "source.add" {
-        let raw = params["path"].as_str().ok_or("Missing folder path")?;
+    if method == "vault.open" || method == "source.add" || method == "baidu.import" {
+        let field = if method == "baidu.import" { "destination" } else { "path" };
+        let raw = params[field].as_str().ok_or("Missing folder path")?;
         let selected = PathBuf::from(raw).canonicalize().map_err(|e|e.to_string())?;
         if !app.state::<AppState>().granted_roots.lock().map_err(|_|"Permission lock failed")?.contains(&selected) {
             return Err("Please choose this directory using the native folder dialog first.".into());

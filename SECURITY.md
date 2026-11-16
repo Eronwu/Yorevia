@@ -33,3 +33,7 @@ Yorevia 当前是未完成发行验收的 Alpha。请先使用少量可备份、
 ## 报告问题
 
 不要把私人照片、人脸嵌入、资料库或真实访问凭证放到公开 Issue。公开报告仅提供不含私人数据的复现步骤；敏感漏洞应使用仓库的私密漏洞报告功能（待维护者开启）。目前没有宣称已经运行的漏洞响应服务或安全认证。
+
+## Optional Baidu developer source
+
+Explicitly connecting Baidu accesses Baidu APIs/downloads directly and downloads only selected files into a dedicated local source directory. Session access tokens are not persisted. Do not submit app secrets, user tokens or private downloaded files to this repository. Public OAuth sign-in is not deployed. See [Baidu integration boundaries](docs/BAIDU-NETDISK.md).

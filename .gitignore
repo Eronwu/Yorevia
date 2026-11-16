@@ -46,3 +46,6 @@ Yorevia-visual-demo.html
 *.bundle
 *.zip
 *.log
+# Downloaded source folders can contain private notes as well as photos.
+Yorevia-Baidu-*/
+**/Yorevia-Baidu-*/

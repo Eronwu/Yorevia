@@ -73,7 +73,7 @@ def main():
     server=ThreadingHTTPServer(('127.0.0.1',args.port),Handler)
     url=f'http://127.0.0.1:{server.server_port}'
     print('Yorevia developer preview: '+url,flush=True)
-    print('No external requests. Close with Ctrl+C. Not a packaged desktop build.',flush=True)
+    print('Local preview; optional Baidu connections access Baidu only. Close with Ctrl+C. Not a packaged desktop build.',flush=True)
     if not args.no_open:webbrowser.open(url)
     try:server.serve_forever()
     except KeyboardInterrupt:pass

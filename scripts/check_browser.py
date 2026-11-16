@@ -44,6 +44,7 @@ def main():
                 page.locator('[data-action="open-vault"]').click()
                 page.locator('.people-invitation').wait_for()
                 page.locator('[data-action="add-source"]').first.click()
+                page.locator('[data-action="local-source"]').click()
                 page.wait_for_function("document.querySelectorAll('.memory-card').length === 3")
                 page.locator('[data-year="2014"]').click()
                 page.wait_for_function("document.querySelectorAll('.memory-card').length === 1")
@@ -66,6 +67,15 @@ def main():
                 with zipfile.ZipFile(exports[0]) as z:
                     assert {'manifest.json','index.html'}<=set(z.namelist())
                     assert '&lt;script&gt;' in z.read('index.html').decode()
+                # Regression: enter Baidu from an already-open source picker.
+                page.locator('[data-action="close-modal"]').click()
+                page.locator('[data-action="add-source"]').first.click()
+                page.locator('#modal [data-action="baidu-source"]').click()
+                page.locator('#modal input[name="token"]').wait_for()
+                page.locator('[data-action="close-modal"]').click()
+                page.locator('[data-action="baidu-source"]').first.click()
+                page.locator('#modal input[name="token"]').wait_for()
+                page.locator('[data-action="close-modal"]').click()
                 browser.close()
             assert not errors,errors
             assert not requests,requests

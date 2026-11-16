@@ -5,11 +5,12 @@ from pathlib import Path
 import threading
 from .vault import Vault, uid
 from .faces import model_status
+from .baidu import BaiduSource
 
 METHODS = {'status','vault.open','summary','source.add','scan.start','faces.start','job.status','job.cancel',
            'timeline','people','graph','image','asset.detail','asset.date','asset.path','person.rename',
            'person.merge','person.faces','face.split','relationship.add','story.save','stories','export',
-           'biometrics.erase'}
+           'biometrics.erase','baidu.connect','baidu.disconnect','baidu.status','baidu.list','baidu.import'}
 
 
 class Service:
@@ -20,9 +21,13 @@ class Service:
         self.guard = threading.RLock()
         self.cancel = threading.Event()
         self.active = None
+        self.baidu = None
+        self.baidu_connection_id = None
 
     def close(self):
         self.cancel.set()
+        self.baidu = None
+        self.baidu_connection_id = None
         self.pool.shutdown(wait=True, cancel_futures=True)
         if self.vault:
             self.vault.close()
@@ -73,6 +78,8 @@ class Service:
             if self.vault:
                 self.vault.close()
             self.vault=new_vault
+            self.baidu=None
+            self.baidu_connection_id=None
             return self.vault.summary()
         if method=='job.status':
             with self.guard:
@@ -87,6 +94,41 @@ class Service:
         v=self.vault
         if method in {'person.merge','face.split'} and self.active and self.jobs[self.active]['status']=='running':
             raise ValueError('请先完成或取消当前整理任务，再修正人物分组。')
+        if method.startswith('baidu.'):
+            if self.active and self.jobs[self.active]['status']=='running' and method != 'baidu.status':
+                raise ValueError('请先完成或取消当前任务，再操作网盘连接。')
+            if method=='baidu.status': return {'connected':self.baidu is not None,'mode':'developer-session'}
+            if method=='baidu.disconnect':
+                if p.get('connection_id') and p['connection_id'] != self.baidu_connection_id:
+                    return {'ok':True}
+                self.baidu=None
+                self.baidu_connection_id=None
+                return {'ok':True}
+            if method=='baidu.connect':
+                source=BaiduSource(p.get('access_token'))
+                listing=source.list()
+                self.baidu=source
+                self.baidu_connection_id=p.get('connection_id') or uid()
+                return listing
+            if not self.baidu: raise ValueError('请先连接百度网盘。')
+            if method=='baidu.list': return self.baidu.list(p.get('directory','/'),p.get('page',0))
+            if method=='baidu.import':
+                client=self.baidu
+                items=client.selection(p.get('ids'))
+                parent=Path(p['destination']).expanduser().resolve(strict=True)
+                if not parent.is_dir() or parent==v.root or parent.is_relative_to(v.root):
+                    raise ValueError('请选择资料库以外的本地下载目录。')
+                destination=parent/('Yorevia-Baidu-'+uid())
+                destination.mkdir(mode=0o700)
+                source=v.add_source(str(destination))
+                def download(progress,cancelled):
+                    result=client.download(items,destination,progress,cancelled)
+                    if not result['cancelled']:
+                        result['scan']=v.scan(source['id'],progress,cancelled)
+                        result['cancelled']=result['scan'].get('cancelled',False)
+                        result['errors']=result['scan'].get('errors',[])
+                    return dict(result,source_id=source['id'],destination=str(destination))
+                return self._start(download)
         if method=='summary': return v.summary()
         if method=='source.add': return v.add_source(p['path'])
         if method=='scan.start': return self._start(lambda progress,cancelled:v.scan(p['source_id'],progress,cancelled,bool(p.get('force',False))))

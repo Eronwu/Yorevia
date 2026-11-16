@@ -15,6 +15,10 @@ Local-first · Open source · Your memories, your files
 > **0.1.0-alpha.1 / 工程预览，不是已验收的发行版。**
 > 截至 2026-11-15，源码已同步到 [Eronwu/Yorevia](https://github.com/Eronwu/Yorevia)，[三平台原生 CI](https://github.com/Eronwu/Yorevia/actions/runs/43706954518) 已成功生成 Apple Silicon、Intel Mac 和 Windows x64 安装包。官方 YuNet / SFace 权重已校验并完成合成输入推理测试，**不代表真人识别或跨年龄准确率已验证**。Apple Silicon 真机已验证启动、原生目录选择、资料库创建、中文故事保存与重启后读回；Windows / Intel 真机安装及完整业务验收仍待完成。安装包为未正式签名、未公证的 Alpha，详见[本轮验证记录](docs/NATIVE-VALIDATION-2026-11-15.md)。
 
+## 百度网盘来源（开发者预览）
+
+新增目录浏览、勾选文件下载和本地索引。当前需要在应用内输入开发者自行获得的用户 Access Token，仅在本次进程保留；无内置应用秘密、无持久令牌、无公众一键登录。真实账号端到端验证尚未完成。详见 [接入与公开分发说明](docs/BAIDU-NETDISK.md)。
+
 ## 一个不要求你从空白页开始的人生档案
 
 选择已有的照片、视频和文字文件夹，不搬迁原件，也不用注册账号。先看到自己的时间轴，再在某张旧照片唤起记忆时补上故事。
@@ -35,7 +39,7 @@ Local-first · Open source · Your memories, your files
 | 导出 | ZIP 内含 Markdown、JSON、缩略图和可离线阅读/打印的 HTML 故事册 |
 | 隐私控制 | 不上传、不遥测、不自动下载模型；人像分析需确认；可以删除人脸特征和头像缓存 |
 
-**不是本版能力：** 视频内人像识别、跨年龄准确识别保证、自动判断社交关系、网盘在线 API、云同步冲突合并、地图、AI 传记生成、EPUB/Word 自动排版、加密资料库、已签名安装包。
+**不是本版能力：** 视频内人像识别、跨年龄准确识别保证、自动判断社交关系、面向普通用户的网盘一键登录、云同步冲突合并、地图、AI 传记生成、EPUB/Word 自动排版、加密资料库、已签名安装包。
 
 ## 先看界面，不读取任何私人资料
 
