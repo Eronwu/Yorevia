@@ -1,4 +1,5 @@
 """Loopback HTTP boundary checks against the actual developer preview server."""
+import http.client
 import json
 from pathlib import Path
 import re
@@ -6,6 +7,7 @@ import subprocess
 import sys
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
+from urllib.parse import urlsplit
 
 
 def test_loopback_preview_boundary():
@@ -24,7 +26,15 @@ def test_loopback_preview_boundary():
             except HTTPError as error:return error.code,error.read()
         payload=json.dumps({'method':'status','params':{}}).encode()
         assert status(Request(url+'/api',data=payload,headers={'Content-Type':'application/json'}))[0]==403
-        assert status(Request(url,headers={'Host':'attacker.invalid'}))[0]==403
+        # Exercise our actual listener, not an environment HTTP intermediary that
+        # may route a deliberately hostile Host elsewhere and synthesize a 502.
+        direct=http.client.HTTPConnection('127.0.0.1',urlsplit(url).port,timeout=10)
+        try:
+            direct.request('GET','/',headers={'Host':'attacker.invalid'})
+            response=direct.getresponse()
+            assert response.status==403
+            response.read()
+        finally:direct.close()
         assert status(Request(url+'/%2e%2e/README.md'))[0]==404
         headers={'Content-Type':'application/json','Origin':url,'X-Yorevia-Token':token}
         code,body=status(Request(url+'/api',data=payload,headers=headers))
