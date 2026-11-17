@@ -33,3 +33,30 @@ test('Baidu modal drains old queued close and repeated opening does not strand s
   assert.match(modal.innerHTML,/Access Token/);
   modal.close();await new Promise(resolve=>setTimeout(resolve,5));
 });
+
+test('Baidu OAuth closing during start cancels the late attempt without displaying a code',async()=>{
+  const calls=[];let finish;let login;
+  globalThis.document={createElement:tag=>({append(){},before(){},set textContent(value){if(value==='使用百度账号授权（测试版）')login=this;}})};
+  globalThis.window={__TAURI__:{core:{invoke:async(_cmd,args)=>{
+    calls.push(args);
+    if(args.method==='baidu.status')return {connected:false,oauth_available:true};
+    if(args.method==='baidu.auth.start')return new Promise(resolve=>finish=resolve);
+    return {ok:true};
+  }}}};
+  globalThis.location={search:''};
+  const {showBaidu}=await import('../dist/baidu.js');
+  class Dialog extends EventTarget{
+    open=false;innerHTML='';form={before(){}};input={value:''};
+    close(){if(!this.open)return;this.open=false;setTimeout(()=>this.dispatchEvent(new Event('close')),0);}
+    showModal(){this.open=true;}
+    querySelector(selector){return selector==='form'?this.form:this.input;}
+  }
+  const modal=new Dialog();await showBaidu(modal,async()=>{},()=>assert.fail());
+  assert.ok(login);login.onclick();
+  assert.ok(finish);modal.close();await new Promise(resolve=>setTimeout(resolve,5));
+  finish({user_code:'TEST1234',verification_url:'https://openapi.baidu.com/device',interval:5,browser_opened:true});
+  await new Promise(resolve=>setTimeout(resolve,5));
+  assert.doesNotMatch(modal.innerHTML,/TEST1234/);
+  assert.ok(calls.some(c=>c.method==='baidu.auth.cancel'));
+  assert.ok(!calls.some(c=>c.method==='baidu.auth.poll'));
+});

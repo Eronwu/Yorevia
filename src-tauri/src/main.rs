@@ -63,7 +63,7 @@ struct AppState { engine: Mutex<Option<Engine>>, granted_roots: Mutex<HashSet<Pa
 fn allowed_method(method: &str) -> bool {
     matches!(method, "status"|"vault.open"|"summary"|"source.add"|"scan.start"|"faces.start"|"job.status"|"job.cancel"|
         "timeline"|"people"|"graph"|"image"|"asset.detail"|"asset.date"|"person.rename"|"person.merge"|
-        "person.faces"|"face.split"|"relationship.add"|"story.save"|"stories"|"export"|"biometrics.erase"|"baidu.status"|"baidu.connect"|"baidu.disconnect"|"baidu.list"|"baidu.import")
+        "person.faces"|"face.split"|"relationship.add"|"story.save"|"stories"|"export"|"biometrics.erase"|"baidu.auth.start"|"baidu.auth.poll"|"baidu.auth.cancel"|"baidu.status"|"baidu.connect"|"baidu.disconnect"|"baidu.list"|"baidu.import")
 }
 fn engine_call(app: &tauri::AppHandle, method: &str, params: Value) -> Result<Value, String> {
     let state = app.state::<AppState>();

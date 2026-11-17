@@ -115,3 +115,19 @@ def test_reject_download_into_vault(monkeypatch,tmp_path):
         s.call('baidu.connect',{'access_token':TOKEN})
         with pytest.raises(ValueError):s.call('baidu.import',{'ids':['1'],'destination':str(s.vault.root)})
     finally:s.close()
+
+def test_oauth_rpc_keeps_token_out_of_frontend_and_vault(monkeypatch,tmp_path):
+    s=Service()
+    try:
+        s.call('vault.open',{'path':str(tmp_path)})
+        monkeypatch.setattr(s.baidu_oauth,'poll',lambda attempt:TOKEN)
+        monkeypatch.setattr(BaiduSource,'_api',lambda *a,**k:{'list':[raw()]})
+        result=s.call('baidu.auth.poll',{'attempt':'attempt-synthetic'})
+        assert result['status']=='authorized'
+        assert TOKEN not in str(result)
+        assert s.baidu_connection_id=='attempt-synthetic'
+        s.call('baidu.disconnect',{'connection_id':'attempt-synthetic'})
+        assert not s.call('baidu.status')['connected']
+    finally:s.close()
+    for p in tmp_path.rglob('*'):
+        if p.is_file():assert TOKEN.encode() not in p.read_bytes()

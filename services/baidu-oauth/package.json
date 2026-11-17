@@ -1,0 +1,1 @@
+{"name":"yorevia-baidu-oauth-prototype","private":true,"type":"module","engines":{"node":">=22"},"scripts":{"start":"node server.mjs","test":"node --test broker.test.mjs"}}

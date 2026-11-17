@@ -6,11 +6,12 @@ import threading
 from .vault import Vault, uid
 from .faces import model_status
 from .baidu import BaiduSource
+from .baidu_oauth import BaiduOAuth
 
 METHODS = {'status','vault.open','summary','source.add','scan.start','faces.start','job.status','job.cancel',
            'timeline','people','graph','image','asset.detail','asset.date','asset.path','person.rename',
            'person.merge','person.faces','face.split','relationship.add','story.save','stories','export',
-           'biometrics.erase','baidu.connect','baidu.disconnect','baidu.status','baidu.list','baidu.import'}
+           'biometrics.erase','baidu.connect','baidu.disconnect','baidu.status','baidu.list','baidu.import','baidu.auth.start','baidu.auth.poll','baidu.auth.cancel'}
 
 
 class Service:
@@ -23,9 +24,11 @@ class Service:
         self.active = None
         self.baidu = None
         self.baidu_connection_id = None
+        self.baidu_oauth = BaiduOAuth()
 
     def close(self):
         self.cancel.set()
+        self.baidu_oauth.cancel()
         self.baidu = None
         self.baidu_connection_id = None
         self.pool.shutdown(wait=True, cancel_futures=True)
@@ -78,6 +81,7 @@ class Service:
             if self.vault:
                 self.vault.close()
             self.vault=new_vault
+            self.baidu_oauth.cancel()
             self.baidu=None
             self.baidu_connection_id=None
             return self.vault.summary()
@@ -97,16 +101,34 @@ class Service:
         if method.startswith('baidu.'):
             if self.active and self.jobs[self.active]['status']=='running' and method != 'baidu.status':
                 raise ValueError('请先完成或取消当前任务，再操作网盘连接。')
-            if method=='baidu.status': return {'connected':self.baidu is not None,'mode':'developer-session'}
+            if method=='baidu.status': return {'connected':self.baidu is not None,'oauth_available':bool(self.baidu_oauth.origin),'mode':'session'}
+            if method=='baidu.auth.start':
+                return self.baidu_oauth.start(p.get('attempt'))
+            if method=='baidu.auth.cancel':
+                self.baidu_oauth.cancel(p.get('attempt'))
+                return {'ok':True}
+            if method=='baidu.auth.poll':
+                token=self.baidu_oauth.poll(p.get('attempt'))
+                if token is None: return {'status':'pending'}
+                source=BaiduSource(token)
+                listing=source.list()
+                if self.vault is not v:
+                    raise ValueError('资料库已切换，请重新登录。')
+                self.baidu=source
+                self.baidu_connection_id=p.get('attempt')
+                return {'status':'authorized','listing':listing}
             if method=='baidu.disconnect':
                 if p.get('connection_id') and p['connection_id'] != self.baidu_connection_id:
                     return {'ok':True}
+                self.baidu_oauth.cancel()
                 self.baidu=None
                 self.baidu_connection_id=None
                 return {'ok':True}
             if method=='baidu.connect':
                 source=BaiduSource(p.get('access_token'))
                 listing=source.list()
+                if self.vault is not v:
+                    raise ValueError('资料库已切换，请重新登录。')
                 self.baidu=source
                 self.baidu_connection_id=p.get('connection_id') or uid()
                 return listing

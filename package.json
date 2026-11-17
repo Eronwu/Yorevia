@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy_static.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test tests/frontend.test.mjs",
+    "test": "node --test tests/frontend.test.mjs services/baidu-oauth/broker.test.mjs",
     "preview": "python scripts/preview.py",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",

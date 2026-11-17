@@ -19,11 +19,41 @@ export async function showBaidu(modal:HTMLDialogElement, beginJob:(method:string
   if(pendingClose)await pendingClose;
   if(current!==invocation)return;
   let generation=0;
-  modal.addEventListener('close',()=>{generation++;const input=modal.querySelector<HTMLInputElement>('input[type=password]');if(input)input.value='';},{once:true});
+  let oauthAvailable=false;
+  let authAttempt:string|null=null;
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  const stopAuth=()=>{if(timer)clearTimeout(timer);const attempt=authAttempt;authAttempt=null;if(attempt)void rpc('baidu.auth.cancel',{attempt}).catch(()=>{});};
+  modal.addEventListener('close',()=>{generation++;stopAuth();const input=modal.querySelector<HTMLInputElement>('input[type=password]');if(input)input.value='';},{once:true});
   const shell=(body:string)=>{modal.innerHTML=`<button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><h2>百度网盘 · 开发者预览</h2>${body}<p role="alert" id="baidu-error"></p>`;};
-  const failure=(err:unknown)=>{const el=modal.querySelector('#baidu-error');if(el)el.textContent=err instanceof Error?err.message:'网盘请求失败';};
+  const failure=(err:unknown)=>{const el=modal.querySelector('#baidu-error');if(el)el.textContent=err instanceof Error?err.message:typeof err==='string'?err:'网盘请求失败';};
+  const authorize=async()=>{
+    const gen=++generation;stopAuth();const attempt=crypto.randomUUID();authAttempt=attempt;
+    shell('<p>正在启动百度官方授权…</p>');
+    try{
+      const result=await rpc<{user_code:string;verification_url:string;interval:number;browser_opened:boolean}>('baidu.auth.start',{attempt});
+      if(!modal.open||gen!==generation){await rpc('baidu.auth.cancel',{attempt});return;}
+      shell(`<p>请在系统浏览器中登录百度，并输入本次验证码：</p><p><strong>${e(result.user_code)}</strong></p><p class="hint">仅在百度官方页面输入。请确认页面中的应用名称为 Yorevia，完成后返回此窗口。授权服务会短暂处理用户令牌，但不接收网盘文件。关闭此窗口会取消等待。</p><p>如浏览器未打开，请手动打开：${e(result.verification_url)}</p><button class="button secondary" id="auth-cancel">取消登录</button>`);
+      modal.querySelector('#auth-cancel')!.addEventListener('click',()=>{generation++;stopAuth();connect();});
+      const poll=async()=>{
+        try{
+          const state=await rpc<{status:string;listing?:Listing}>('baidu.auth.poll',{attempt});
+          if(!modal.open||gen!==generation){if(state.status==='authorized')await rpc('baidu.disconnect',{connection_id:attempt});return;}
+          if(state.status==='authorized'&&state.listing){authAttempt=null;browse(state.listing);return;}
+          timer=setTimeout(()=>void poll(),result.interval*1000);
+        }catch(err){if(modal.open&&gen===generation){stopAuth();connect();failure(err);}}
+      };
+      timer=setTimeout(()=>void poll(),result.interval*1000);
+    }catch(err){if(modal.open&&gen===generation){stopAuth();connect();failure(err);}}
+  };
   const connect=()=>{
     shell('<p>仅供已取得授权的开发者测试。目前尚未接入面向普通用户的登录服务。</p><p class="hint">输入百度网盘 Access Token（不是应用 SecretKey）。令牌仅在本次应用进程中保留，退出或断开即清除；不会写入资料库。请勿将令牌发到聊天或提交 GitHub。</p><form><label>Access Token<input type="password" name="token" autocomplete="off" required maxlength="4096"></label><button class="button primary" type="submit">连接并浏览</button></form>');
+    if(oauthAvailable){
+      const form=modal.querySelector('form')!;
+      const login=document.createElement('button');login.className='button primary';login.type='button';login.textContent='使用百度账号授权（测试版）';
+      form.before(login);login.onclick=()=>void authorize();
+      const hint=modal.querySelector('h2+p');if(hint)hint.textContent='授权服务测试版。通过百度官方页面登录，或展开开发者令牌入口。';
+      const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='开发者令牌入口';details.append(summary);form.before(details);details.append(form);
+    }
     modal.querySelector('form')!.onsubmit=async event=>{
       event.preventDefault();const input=modal.querySelector<HTMLInputElement>('input')!;const token=input.value;input.value='';
       const button=modal.querySelector<HTMLButtonElement>('[type=submit]')!;button.disabled=true;const gen=++generation;const connectionId=crypto.randomUUID();
@@ -50,5 +80,5 @@ export async function showBaidu(modal:HTMLDialogElement, beginJob:(method:string
   };
   shell('<p>正在检查连接…</p>');modal.showModal();
   const gen=generation;
-  try{const status=await rpc<{connected:boolean}>('baidu.status');if(!modal.open||gen!==generation)return;if(status.connected)await load('/');else connect();}catch(err){failure(err);}
+  try{const status=await rpc<{connected:boolean;oauth_available?:boolean}>('baidu.status');if(!modal.open||gen!==generation)return;oauthAvailable=Boolean(status.oauth_available);if(status.connected)await load('/');else connect();}catch(err){failure(err);}
 }
