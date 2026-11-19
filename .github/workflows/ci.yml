@@ -48,4 +48,9 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: npm install --ignore-scripts
       - run: npm run build
-      - run: python scripts/check_i18n_browser.py
+      - run: python scripts/check_i18n_browser.py --screenshots /tmp/yorevia-i18n-screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bilingual-browser-screenshots
+          path: /tmp/yorevia-i18n-screenshots

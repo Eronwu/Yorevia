@@ -16,6 +16,7 @@ from playwright.sync_api import sync_playwright
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--chromium')
+    parser.add_argument('--screenshots')
     args = parser.parse_args()
     errors, unexpected_requests = [], []
     with tempfile.TemporaryDirectory(prefix='yorevia-i18n-') as directory:
@@ -57,6 +58,9 @@ def main():
                 page.reload()
                 page.locator('#app-language').wait_for()
                 assert page.locator('#app-language').input_value() == 'zh-CN'
+                if args.screenshots:
+                    Path(args.screenshots).mkdir(parents=True, exist_ok=True)
+                    page.screenshot(path=str(Path(args.screenshots) / 'welcome-zh.png'), full_page=True)
                 page.locator('[data-action="open-vault"]').click()
                 page.locator('.people-invitation').wait_for()
                 page.locator('[data-action="add-source"]').first.click()
@@ -98,6 +102,7 @@ def main():
                     page.locator('#modal input[name="token"]').wait_for()
                     assert 'Developer preview' in page.locator('#modal').inner_text()
                     page.locator('[data-action="close-modal"]').click()
+                if args.screenshots: page.screenshot(path=str(Path(args.screenshots) / 'settings-en.png'), full_page=True)
                 # Responsive English chrome must not force horizontal page scrolling.
                 for width in [1440, 1024, 820]:
                     page.set_viewport_size({'width': width, 'height': 1000})

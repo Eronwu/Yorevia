@@ -14,7 +14,7 @@ def bundle(demo=True):
             text=re.sub(r"const isDemo = [^\n]+;",'const isDemo = true;',text)
         if filename=='app.js':
             if demo:
-                text=text.replace('<button class="text-button" data-action="exit-demo">退出示例</button>', '')
+                text=re.sub(r'<button class="text-button" data-action="exit-demo">.*?</button>', '', text)
             text='const e=escapeHTML;\n'+text
         result.append(text)
     return '\n'.join(result)
