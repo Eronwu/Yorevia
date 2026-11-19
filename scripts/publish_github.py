@@ -13,7 +13,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 PUBLIC_PATHS=[
-    '.github','.gitignore','LICENSE','NOTICE','README.md','README.en.md',
+    '.github','.gitignore','LICENSE','NOTICE','README.md','README.en.md','README.zh-CN.md',
     'SECURITY.md','CONTRIBUTING.md','THIRD_PARTY_NOTICES.md','package.json',
     'package-lock.json','tsconfig.json','pyproject.toml','requirements.txt',
     'requirements-dev.txt','src','public','engine','tests','scripts','docs',
