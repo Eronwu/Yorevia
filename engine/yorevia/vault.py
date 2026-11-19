@@ -443,8 +443,25 @@ class Vault:
             file.unlink(missing_ok=True)
         return {'ok':True,'note':'已移除逻辑记录与缓存，不保证 SSD、文件系统快照或旧备份中的物理抹除。'}
 
-    def export(self) -> dict:
-        """Portable, human-readable snapshot; no embeddings or original media bytes."""
+    def export(self, locale: object = None) -> dict:
+        """Portable snapshot; locale changes only the HTML presentation."""
+        lang = 'en' if locale == 'en' else 'zh-CN'
+        labels = {
+            'en': {
+                'title': 'Yorevia · Life Atlas',
+                'tagline': 'Your memories belong to you.',
+                'description': 'Personal archive export · excludes original media and face embeddings',
+                'unknown_date': 'Date unconfirmed',
+                'empty': 'No stories yet. The archive index is in manifest.json.',
+            },
+            'zh-CN': {
+                'title': 'Yorevia · 往途',
+                'tagline': '往途 · 记忆属于你。',
+                'description': '个人档案导出 · 不含原始媒体和人脸特征向量',
+                'unknown_date': '时间待确认',
+                'empty': '尚未写下故事。资料索引保存在 manifest.json 中。',
+            },
+        }[lang]
         with self.db() as db:
             assets=[dict(r) for r in db.execute('SELECT id,kind,title,captured_at,date_source,thumb FROM assets ORDER BY captured_at')]
             people=[dict(r) for r in db.execute('SELECT * FROM people')]
@@ -469,12 +486,20 @@ class Vault:
                     a=by_id.get(asset_id)
                     if a and a['thumb']:
                         images.append(f'<img src="thumbs/{html.escape(a["thumb"])}" alt="{html.escape(a["title"],quote=True)}">')
-                chapters.append(f'<article><small>{html.escape(story["happened_at"] or "时间待确认")}</small><h2>{html.escape(story["title"])}</h2><p>{html.escape(story["body"])}</p>{"".join(images)}</article>')
+                chapters.append(f'<article><small>{html.escape(story["happened_at"] or labels["unknown_date"])}</small><h2>{html.escape(story["title"])}</h2><p>{html.escape(story["body"])}</p>{"".join(images)}</article>')
             for a in assets:
                 if a['thumb']:
                     path=(self.root/'thumbs'/a['thumb']).resolve()
                     if path.is_relative_to(self.root/'thumbs') and path.is_file():
                         archive.write(path,'thumbs/'+a['thumb'])
-            markup='''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yorevia · 往途</title><style>body{background:#f5f2ea;color:#2f3631;max-width:800px;padding:50px 24px;margin:auto;font:18px/1.8 Georgia,serif}h1{font-size:64px;font-weight:400}h2{font-weight:400}p{white-space:pre-wrap}article{border-top:1px solid #d9d3c7;margin-top:50px;padding-top:20px;break-inside:avoid}img{max-width:100%;max-height:550px}small{color:#717a70}@media print{body{background:white}article{break-before:page}}</style><header><h1>Yorevia</h1><p>往途 · 记忆属于你。</p><small>个人档案导出 · 不含原始媒体和人脸特征向量</small></header>'''+''.join(chapters or ['<p>尚未写下故事。资料索引保存在 manifest.json 中。</p>'])+'</html>'
+            markup=(
+                f'<!doctype html><html lang="{lang}"><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                f'<title>{labels["title"]}</title>'
+                '<style>body{background:#f5f2ea;color:#2f3631;max-width:800px;padding:50px 24px;margin:auto;font:18px/1.8 Georgia,serif}h1{font-size:64px;font-weight:400}h2{font-weight:400}p{white-space:pre-wrap}article{border-top:1px solid #d9d3c7;margin-top:50px;padding-top:20px;break-inside:avoid}img{max-width:100%;max-height:550px}small{color:#717a70}@media print{body{background:white}article{break-before:page}}</style>'
+                f'<header><h1>Yorevia</h1><p>{labels["tagline"]}</p>'
+                f'<small>{labels["description"]}</small></header>'
+                + ''.join(chapters or [f'<p>{labels["empty"]}</p>']) + '</html>'
+            )
             archive.writestr('index.html',markup)
         return {'path':str(output),'filename':name,'size':output.stat().st_size}

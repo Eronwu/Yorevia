@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def bundle(demo=True):
     result=[]
-    for filename in ('domain.js','demo.js','bridge.js','baidu.js','app.js'):
+    for filename in ('messages.js','i18n.js','domain.js','demo.js','bridge.js','baidu.js','app.js'):
         text=(ROOT/'dist'/filename).read_text(encoding='utf-8')
         text=re.sub(r'^import .*?;\s*$', '', text, flags=re.M)
         text=re.sub(r'\bexport (?=(?:async |const |function |let |class ))','',text)
