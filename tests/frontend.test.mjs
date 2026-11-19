@@ -1,3 +1,5 @@
+import {setPreference} from '../dist/i18n.js';
+setPreference('zh-CN');
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {escapeHTML,dateLabel,dateEvidence,groupAssets,graphPositions} from '../dist/domain.js';

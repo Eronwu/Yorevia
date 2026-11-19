@@ -1,17 +1,18 @@
+import {t,locale} from './i18n.js';
 import type { Asset, Person } from './types.js';
 export function escapeHTML(value: unknown): string {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]!));
 }
 export function personName(person: Pick<Person,'id'|'name'>): string {
-  return person.name || `未命名 ${person.id.slice(0,4)}`;
+  return person.name || t('未命名 {id}',{id:person.id.slice(0,4)});
 }
 export function dateLabel(value: string|null): string {
-  if(!value) return '时间待确认';
+  if(!value) return t('时间待确认');
   const [y,m,d] = value.slice(0,10).split('-');
-  return `${y} 年 ${Number(m)} 月 ${Number(d)} 日`;
+  return locale()==='en'?`${y}-${m}-${d}`:`${y} 年 ${Number(m)} 月 ${Number(d)} 日`;
 }
 export function dateEvidence(source:string):string {
-  return ({exif:'拍摄信息',filename:'文件名推测',manual:'你标记的时间',unknown:'时间待确认'} as Record<string,string>)[source] || '时间待确认';
+  return t(({exif:'拍摄信息',filename:'文件名推测',manual:'你标记的时间',unknown:'时间待确认'} as Record<string,string>)[source] || '时间待确认');
 }
 export function groupAssets(items:Asset[]): [string,Asset[]][] {
   const groups=new Map<string,Asset[]>();

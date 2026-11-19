@@ -34,3 +34,23 @@ jobs:
         with:
           name: yorevia-offline-visual-demo
           path: Yorevia-visual-demo.html
+  bilingual-browser:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-dev.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - run: npm install --ignore-scripts
+      - run: npm run build
+      - run: python scripts/check_i18n_browser.py --screenshots /tmp/yorevia-i18n-screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bilingual-browser-screenshots
+          path: /tmp/yorevia-i18n-screenshots

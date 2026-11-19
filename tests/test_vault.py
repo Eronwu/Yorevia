@@ -186,6 +186,52 @@ def test_export_is_portable_not_biometric(vault,source):
         assert not any('vault.sqlite' in x for x in z.namelist())
 
 
+@pytest.mark.parametrize(('locale','lang','date_label'),[
+    (None,'zh-CN','时间待确认'),('zh-CN','zh-CN','时间待确认'),
+    ('en','en','Date unconfirmed'),('invalid','zh-CN','时间待确认'),
+    (['en'],'zh-CN','时间待确认'),
+])
+def test_export_locale_changes_only_html_labels(vault,source,locale,lang,date_label):
+    root,sid=source
+    filename='记忆 & 回忆.jpg'
+    photo(root/filename);scan(vault,sid)
+    asset=vault.timeline()['items'][0]['id']
+    title='我记得 <script>alert(1)</script>'
+    body='未翻译的内容 & <img src=x onerror=bad()>'
+    vault.save_story(title,body,asset_ids=[asset])
+    service=Service()
+    service.vault=vault
+    try:
+        result=service.call('export',{} if locale is None else {'locale':locale})
+    finally:
+        service.vault=None
+        service.close()
+    with zipfile.ZipFile(result['path']) as z:
+        content=z.read('index.html').decode()
+        assert f'<html lang="{lang}">' in content
+        assert f'<small>{date_label}</small>' in content
+        assert '我记得 &lt;script&gt;alert(1)&lt;/script&gt;' in content
+        assert '未翻译的内容 &amp; &lt;img src=x onerror=bad()&gt;' in content
+        assert 'alt="记忆 &amp; 回忆"' in content
+        assert '<script>' not in content
+        manifest=json.loads(z.read('manifest.json'))
+        assert manifest['stories'][0]['title']==title
+        assert manifest['stories'][0]['body']==body
+        assert manifest['locations'][0]['relative_path']==filename
+        md=z.read(f"stories/{manifest['stories'][0]['id']}.md").decode()
+        assert f'# {title}\n\n{body}\n' in md
+
+
+@pytest.mark.parametrize(('locale','empty_text'),[
+    ('zh-CN','尚未写下故事。资料索引保存在 manifest.json 中。'),
+    ('en','No stories yet. The archive index is in manifest.json.'),
+])
+def test_export_localizes_empty_state(vault,locale,empty_text):
+    result=vault.export(locale)
+    with zipfile.ZipFile(result['path']) as z:
+        assert empty_text in z.read('index.html').decode()
+
+
 class FakeEngine:
     """Test vectors only: these tests do NOT evaluate a real recognition model."""
     def __init__(self, same_frame=False):self.same_frame=same_frame

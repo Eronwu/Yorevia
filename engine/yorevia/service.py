@@ -172,7 +172,7 @@ class Service:
         if method=='relationship.add': return v.add_relationship(**p)
         if method=='story.save': return v.save_story(**p)
         if method=='stories': return v.stories()
-        if method=='export': return v.export()
+        if method=='export': return v.export(p.get('locale'))
         if method=='biometrics.erase':
             if self.active and self.jobs[self.active]['status']=='running':
                 raise ValueError('请先停止当前扫描任务。')
