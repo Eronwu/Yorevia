@@ -17,7 +17,7 @@ export function setPreference(value:unknown):void{selected=normalizePreference(v
 export function subscribe(listener:()=>void):()=>void{listeners.add(listener);return()=>listeners.delete(listener);}
 if(typeof window!=='undefined'&&window.addEventListener){window.addEventListener('languagechange',()=>{if(selected==='system')publish();});window.addEventListener('storage',event=>{if(event.key===languageKey){selected=normalizePreference(event.newValue);publish();}});}
 export function t(source:string,params:Record<string,string|number>={}):string{
-  const message=locale()==='en'?(english[source]??source):source;
+  const message=locale()==='en'?(Object.hasOwn(english,source)?english[source]!:source):source;
   return message.replace(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g,(whole,key:string)=>Object.hasOwn(params,key)?String(params[key]):whole);
 }
 const nativeErrors:Record<string,string>={

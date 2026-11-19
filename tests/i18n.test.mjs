@@ -24,6 +24,7 @@ test('only app-owned labels translate, not names, diagnostics or parameter value
  assert.equal(personName({name:'',id:'abcd1234'}),'Unnamed abcd');
  assert.equal(t('未命名 {id}',{id:'故事 {id} <script>'}),'Unnamed 故事 {id} <script>');
  assert.equal(translateError(new Error('OS diagnostic /私人/path')),'OS diagnostic /私人/path');
+ for(const raw of ['toString','constructor','__proto__'])assert.equal(translateError(new Error(raw)),raw);
  assert.equal(dateLabel('2014-01-01T00:10:00'),'2014-01-01');setPreference('zh-CN');
 });
 test('every literal interface translation has a complete English entry and matching placeholders',()=>{

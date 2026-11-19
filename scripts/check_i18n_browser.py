@@ -107,6 +107,14 @@ def main():
                 for width in [1440, 1024, 820]:
                     page.set_viewport_size({'width': width, 'height': 1000})
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1')
+                    assert page.evaluate("document.querySelector('main').scrollWidth <= document.querySelector('main').clientWidth + 1")
+                # The real standalone demo bundle also loads without modules or network.
+                demo = context.new_page()
+                demo.on('pageerror', lambda err: errors.append(str(err)))
+                demo.on('request', lambda request: unexpected_requests.append(request.url))
+                demo.set_content(html_document(True))
+                demo.locator('.memory-card').first.wait_for()
+                assert demo.locator('[data-action="exit-demo"]').count() == 0
                 browser.close()
             assert not errors, errors
             assert not unexpected_requests, unexpected_requests
