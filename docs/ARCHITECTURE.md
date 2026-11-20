@@ -1,5 +1,7 @@
 # Yorevia V0.1 架构与实现决策
 
+> 当前默认运行方式是本地网页版：浏览器 → 本机 `127.0.0.1` 服务 → Python / SQLite。系统目录选择器授予短时一次性请求权限，单机资料库路径记在本机配置，恢复失败时不自动新建。旧 Tauri 代码仅保留供追溯，不再独立打包。
+
 ## ADR-001：独立架构与运行时选择
 
 不 Fork 相册服务。生命周期记录和人物关系属于 Yorevia 的领域模型，照片索引、检测与解码由现成库完成。
@@ -9,8 +11,8 @@
 ```text
 TypeScript UI（时间轴 / 人物 / 故事 / 隐私）
    │ 精确的 method + params，明确的错误与任务状态
-   ├── 桌面：Tauri Rust → 私有 stdin/stdout → Python sidecar
-   └── 开发预览：127.0.0.1 HTTP + 随机令牌 + Origin/Host 校验
+   ├── 历史桌面：Tauri Rust → 私有 stdin/stdout → Python sidecar
+   └── 默认本地 Web：127.0.0.1 HTTP + 随机令牌 + Origin/Host 校验
                                           │
                              Service / 可取消任务队列
                                ├── Vault / SQLite

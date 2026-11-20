@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS locations(
  available INTEGER NOT NULL DEFAULT 1, scan_id TEXT NOT NULL,
  PRIMARY KEY(source_id,relative_path)
 );
+CREATE TABLE IF NOT EXISTS baidu_photos(
+ asset_id TEXT PRIMARY KEY REFERENCES assets(id), account TEXT NOT NULL, fsid TEXT NOT NULL,
+ path TEXT NOT NULL, size INTEGER NOT NULL, mtime INTEGER NOT NULL, UNIQUE(account,fsid)
+);
 CREATE TABLE IF NOT EXISTS people(
  id TEXT PRIMARY KEY, name TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '',
  created_at TEXT NOT NULL

@@ -13,7 +13,7 @@ npm test
 python -m pytest -q
 ```
 
-浏览器 smoke 额外需要 Playwright 和 Chromium；它模拟原生 IPC，使用真实 Python 服务，不代表 Tauri 经过真机验证。模型 smoke 需要校验通过的模型文件。不能因缺少模型而把 skip 写成 pass。
+浏览器 smoke 额外需要 Playwright 和 Chromium；用 `python scripts/check_local_web_browser.py` 连接真实 Python 本地服务，目录选择与测试素材均为模拟，不代表系统原生选择器验收。模型 smoke 需要校验通过的模型文件。不能因缺少模型而把 skip 写成 pass。
 
 ## 提交约定
 
@@ -23,6 +23,6 @@ python -m pytest -q
 - UI 读取的路径不得直接绕过原生目录授权。避免开放通用 shell / 任意文件读取接口。
 - 不把同框次数解释为关系亲疏，不把缺少照片解释为关系结束。
 - 模型变化记录上游来源、固定校验值、许可、实际效果与回滚方案。
-- 小步提交，关联可复现问题；不要为赶进度关闭测试或伪造 native build 状态。
+- 小步提交，关联可复现问题；不要为赶进度关闭测试或伪造跨平台验收状态。
 
 当前前端为严格 TypeScript + DOM/SVG。可讨论 React/D3 迁移，但避免同时重写持久化层和 UI。
