@@ -78,7 +78,8 @@ def launch(no_browser: bool) -> None:
         with os.fdopen(os.open(log, flags, 0o600), 'ab') as stream:
             child = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=stream, stderr=stream,
                                      start_new_session=True)
-        deadline = time.monotonic() + 12
+        # First start may spend time importing native image/media dependencies.
+        deadline = time.monotonic() + 45
         while not service_ready():
             if time.monotonic() > deadline or child.poll() is not None:
                 # One more check for a concurrent click that already started it.

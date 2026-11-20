@@ -210,7 +210,13 @@ def test_launcher_starts_single_background_process_and_reuses_address(tmp_path, 
         return child
     monkeypatch.setattr(launcher.subprocess,'Popen',record_popen)
     try:
-        launcher.launch(no_browser=True)
+        try:
+            launcher.launch(no_browser=True)
+        except ValueError:
+            log=launcher.default_profile()/'launcher.log'
+            if log.is_file():
+                pytest.fail(f'Synthetic Yorevia launcher failed: {log.read_text(errors="replace")[-4000:]}')
+            raise
         assert launcher.service_ready() and not opened
         launcher.launch(no_browser=False)
         assert len(children)==1 and opened==[address]

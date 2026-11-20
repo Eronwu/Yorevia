@@ -6,7 +6,6 @@ import re
 import sys
 import threading
 from pathlib import Path
-from types import SimpleNamespace
 import time
 import urllib.parse
 
@@ -49,12 +48,20 @@ class LoopbackRPC:
                 created.set()
                 return super().serve_forever(*args, **kwargs)
         monkeypatch.setattr(preview,'ThreadingHTTPServer',Listener)
-        monkeypatch.setattr(preview,'signal',SimpleNamespace(SIGTERM=15,signal=lambda *_:None))
         monkeypatch.setattr(sys,'argv',['preview.py','--local-web','--profile',str(workspace/'profile'),
                                        '--port','0','--no-open'])
-        self.thread = threading.Thread(target=preview.main,kwargs={'picker':lambda *_:str(workspace)},daemon=True)
+        boot_errors = []
+        def run_server():
+            try:
+                preview.main(picker=lambda *_:str(workspace))
+            except Exception as exc:
+                boot_errors.append(exc)
+                created.set()
+        self.thread = threading.Thread(target=run_server,daemon=True)
         self.thread.start()
-        assert created.wait(5), 'local-web listener failed to start'
+        assert created.wait(45), 'synthetic local-web listener did not start within 45 seconds'
+        assert not boot_errors, boot_errors
+        assert self.server is not None
         self.port = self.server.server_port
         self.origin = f'http://127.0.0.1:{self.port}'
         connection = http.client.HTTPConnection('127.0.0.1',self.port,timeout=5)

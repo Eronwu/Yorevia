@@ -122,7 +122,8 @@ def main(picker=None):
         if not args.no_open:webbrowser.open(url)
         def stop(*_):
             raise KeyboardInterrupt
-        signal.signal(signal.SIGTERM,stop)
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGTERM,stop)
         server.serve_forever()
     except KeyboardInterrupt:
         pass
