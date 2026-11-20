@@ -7,6 +7,7 @@ import argparse
 from io import BytesIO
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -14,7 +15,7 @@ import tempfile
 from urllib.parse import parse_qs, urlsplit
 
 from PIL import Image
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -90,6 +91,13 @@ def web_process(profile: Path, port: int = 0, vault: Path | None = None, source:
         assert process.returncode == 0, errors
 
 
+def token_from(response):
+    # Read the loopback document response, not browser-executed source. Never print tokens.
+    match = re.search(r'window\.__YOREVIA_TOKEN__=("[^"]+")', response.text())
+    assert match is not None
+    return json.loads(match.group(1))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--chromium')
@@ -127,12 +135,12 @@ def main():
             page.locator('.people-invitation').wait_for()
             page.locator('[data-action="add-source"]').first.click()
             page.locator('[data-action="local-source"]').click()
-            page.wait_for_function("document.querySelectorAll('.memory-card').length === 2")
+            expect(page.locator('.memory-card')).to_have_count(2)
             page.locator('.memory-card img').first.wait_for(state='visible')
-            page.wait_for_function("document.querySelector('.memory-card img').naturalWidth > 0")
+            expect(page.locator('.memory-card img').first).to_have_js_property('naturalWidth', 240)
             page.locator('.memory-card').filter(has=page.locator('img[data-media]')).first.click()
             page.locator('#modal .detail-photo').wait_for(state='visible')
-            page.wait_for_function("document.querySelector('#modal .detail-photo').naturalWidth > 0")
+            expect(page.locator('#modal .detail-photo')).to_have_js_property('naturalWidth', 240)
             page.locator('#modal [data-action="close-modal"]').click()
             page.locator('[data-action="write-story"]').click()
             title = 'Browser restart fixture'
@@ -145,18 +153,18 @@ def main():
             page.locator('#modal input[name="token"]').fill('synthetic.ci.provider')
             page.locator('#modal button[type=submit]').click()
             page.locator('#modal [data-baidu-folder]').click()
-            page.wait_for_function("document.querySelector('#modal .path')?.textContent === '/album'")
+            expect(page.locator('#modal .path')).to_have_text('/album')
             page.locator('#modal button[type=submit]').click()
             remote = page.locator('.memory-card').filter(has_text='Cloud-fixture')
             remote.wait_for()
             remote.scroll_into_view_if_needed()
-            page.wait_for_function("document.querySelector('.memory-card img[data-remote-photo]')?.naturalWidth === 40")
+            expect(remote.locator('img[data-remote-photo]')).to_have_js_property('naturalWidth', 40)
             remote.click()
-            page.wait_for_function("document.querySelector('#modal .detail-photo')?.naturalWidth === 240")
+            expect(page.locator('#modal .detail-photo')).to_have_js_property('naturalWidth', 240)
             calls = trace.read_text().splitlines()
             assert set(calls) == {'uinfo','list','filemetas','/small','/large'}, calls
             assert calls.count('/small') == calls.count('/large') == 1, calls
-            old_token = page.evaluate('window.__YOREVIA_TOKEN__')
+            old_token = token_from(response)
             if args.screenshot:
                 page.screenshot(path=str(args.screenshot), full_page=True)
         port = int(url.rsplit(':',1)[1])
@@ -166,8 +174,8 @@ def main():
         page.on('pageerror', lambda e: errors.append(str(e)))
         with web_process(profile, port=port) as restarted:
             assert restarted == url
-            page.goto(url)
-            assert page.evaluate('window.__YOREVIA_TOKEN__') != old_token
+            new_response = page.goto(url)
+            assert new_response and token_from(new_response) != old_token
             page.locator('.people-invitation').wait_for()
             page.locator('[data-view="stories"]').first.click()
             page.get_by_text(title, exact=True).wait_for()
