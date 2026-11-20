@@ -1,4 +1,4 @@
-import {rpc, chooseFolder, isDemo} from './bridge.js';
+import {rpc, chooseFolder, isDemo, isLocalWeb} from './bridge.js';
 import {escapeHTML as e} from './domain.js';
 import {t, translateError} from './i18n.js';
 interface Entry {id:string;name:string;path:string;directory:boolean;size:number;supported:boolean}
@@ -66,17 +66,19 @@ export async function showBaidu(modal:HTMLDialogElement, beginJob:(method:string
     try{const listing=await rpc<Listing>('baidu.list',{directory,page});if(modal.open&&gen===generation)browse(listing);}catch(err){if(gen===generation){failure(err);modal.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=false);}}
   };
   const browse=(listing:Listing)=>{
-    shell(`<p class="hint">${e(t('只下载你勾选的文件，不递归导入文件夹，不修改网盘原件。每次最多 100 个文件、2 GiB，单文件最多 1 GiB。选择仅限当前页。'))}</p><p class="path">${e(listing.directory)}</p><div><button class="button secondary" id="baidu-up" ${listing.directory==='/'?'disabled':''}>${e(t('上一级'))}</button> <button class="text-button" id="baidu-disconnect">${e(t('断开连接'))}</button></div><form><div class="baidu-files">${listing.items.map((item,index)=>item.directory?`<div><button type="button" class="text-button" data-baidu-folder="${index}">📁 ${e(item.name)}</button></div>`:`<label class="check-field"><input type="checkbox" name="file" value="${e(item.id)}" ${!item.supported||item.size>1024**3?'disabled':''}>${e(item.name)} · ${(item.size/1024/1024).toFixed(1)} MiB${!item.supported?e(t('（暂不支持）')):''}</label>`).join('')||`<p>${e(t('此目录为空。'))}</p>`}</div><p>${e(t('第 {page} 页',{page:listing.page+1}))} <button type="button" class="text-button" id="baidu-prev" ${!listing.page?'disabled':''}>${e(t('上一页'))}</button><button type="button" class="text-button" id="baidu-next" ${!listing.has_more?'disabled':''}>${e(t('下一页'))}</button></p><button class="button primary" type="submit">${e(t('选择本地位置并导入勾选文件'))}</button></form><p class="hint">${e(t('会在你选择的位置新建专用文件夹，再索引到人生资料库。下载需要网络并占用本地磁盘；文件不会传到 Yorevia 服务器。取消后已下载文件保留，可在资料来源中增量扫描。'))}</p>`);
+    shell(`<p class="hint">${isLocalWeb?e(t('递归索引当前目录的照片；浏览时才加载预览，不下载原图。')):e(t('只下载你勾选的文件，不递归导入文件夹，不修改网盘原件。每次最多 100 个文件、2 GiB，单文件最多 1 GiB。选择仅限当前页。'))}</p><p class="path">${e(listing.directory)}</p><div><button class="button secondary" id="baidu-up" ${listing.directory==='/'?'disabled':''}>${e(t('上一级'))}</button> <button class="text-button" id="baidu-disconnect">${e(t('断开连接'))}</button></div><form><div class="baidu-files">${listing.items.map((item,index)=>item.directory?`<div><button type="button" class="text-button" data-baidu-folder="${index}">📁 ${e(item.name)}</button></div>`:isLocalWeb?`<div>${e(item.name)}</div>`:`<label class="check-field"><input type="checkbox" name="file" value="${e(item.id)}" ${!item.supported||item.size>1024**3?'disabled':''}>${e(item.name)} · ${(item.size/1024/1024).toFixed(1)} MiB${!item.supported?e(t('（暂不支持）')):''}</label>`).join('')||`<p>${e(t('此目录为空。'))}</p>`}</div><p>${e(t('第 {page} 页',{page:listing.page+1}))} <button type="button" class="text-button" id="baidu-prev" ${!listing.page?'disabled':''}>${e(t('上一页'))}</button><button type="button" class="text-button" id="baidu-next" ${!listing.has_more?'disabled':''}>${e(t('下一页'))}</button></p><button class="button primary" type="submit">${e(t(isLocalWeb?'索引当前文件夹与子目录':'选择本地位置并导入勾选文件'))}</button></form>${isLocalWeb?'':`<p class="hint">${e(t('会在你选择的位置新建专用文件夹，再索引到人生资料库。下载需要网络并占用本地磁盘；文件不会传到 Yorevia 服务器。取消后已下载文件保留，可在资料来源中增量扫描。'))}</p>`}`);
     modal.querySelector('#baidu-up')!.addEventListener('click',()=>void load(listing.directory.replace(/\/[^/]+\/?$/,'')||'/'));
     modal.querySelector('#baidu-prev')!.addEventListener('click',()=>void load(listing.directory,listing.page-1));
     modal.querySelector('#baidu-next')!.addEventListener('click',()=>void load(listing.directory,listing.page+1));
     modal.querySelectorAll<HTMLElement>('[data-baidu-folder]').forEach(b=>b.addEventListener('click',()=>void load(listing.items[Number(b.dataset.baiduFolder)]!.path)));
     modal.querySelector('#baidu-disconnect')!.addEventListener('click',async()=>{const gen=++generation;try{await rpc('baidu.disconnect');if(modal.open&&gen===generation)connect();}catch(err){failure(err);}});
     modal.querySelector('form')!.onsubmit=async event=>{
-      event.preventDefault();const form=event.currentTarget as HTMLFormElement;const ids=new FormData(form).getAll('file');
+      event.preventDefault();const form=event.currentTarget as HTMLFormElement;
+      if(isLocalWeb){modal.close();try{await beginJob('baidu.scan_photos',{directory:listing.directory});}catch(err){onError(err);}return;}
+      const ids=new FormData(form).getAll('file');
       if(!ids.length){failure(new Error('请先勾选文件。'));return;}
       const gen=++generation;form.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=true);
-      try{const destination=await chooseFolder(t('选择网盘文件的本地保存位置（资料库以外）'));if(!modal.open||gen!==generation)return;if(!destination){browse(listing);return;}modal.close();await beginJob('baidu.import',{ids,destination});}catch(err){if(modal.open)failure(err);else onError(err);}finally{form.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=false);}
+      try{const destination=await chooseFolder(t('选择网盘文件的本地保存位置（资料库以外）'),'baidu.import');if(!modal.open||gen!==generation)return;if(!destination){browse(listing);return;}modal.close();await beginJob('baidu.import',{ids,destination});}catch(err){if(modal.open)failure(err);else onError(err);}finally{form.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=false);}
     };
   };
   shell(`<p>${e(t('正在检查连接…'))}</p>`);modal.showModal();

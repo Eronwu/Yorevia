@@ -48,7 +48,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo',default='Eronwu/Yorevia',help='owner/repository')
     parser.add_argument('--visibility',choices=['public','private'],default='public')
-    parser.add_argument('--build',action='store_true',help='Dispatch native package CI after a successful push')
+    parser.add_argument('--build',action='store_true',help='Dispatch core Web CI after a successful push')
     parser.add_argument('--dry-run',action='store_true',help='Show intended steps without modifying local/GitHub state')
     args=parser.parse_args()
     if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+',args.repo):
@@ -59,7 +59,7 @@ def main():
         print('2. Initialize this folder only, stage explicitly allowed project files, commit if changed.')
         print('3. Create the repository only if not found; visibility for a NEW repository: '+args.visibility)
         print('4. Add a matching origin if missing; ordinary push, never force.')
-        if args.build:print('5. Dispatch desktop.yml; it builds native targets on GitHub, not on this machine.')
+        if args.build:print('5. Dispatch ci.yml to validate the local Web code on GitHub; no native packages are built.')
         print('No files or remote repositories have been changed.')
         return
     for tool in ('git','gh'):
@@ -93,7 +93,7 @@ def main():
     staged=run('git','diff','--cached','--name-only','--diff-filter=ACMR',capture=True).stdout.splitlines()
     check_staged_paths(staged)
     changed=run('git','diff','--cached','--quiet',check=False).returncode
-    if changed==1:run('git','commit','-m','feat: bootstrap Yorevia local-first desktop alpha')
+    if changed==1:run('git','commit','-m','feat: bootstrap Yorevia local-first Web alpha')
     elif changed!=0:raise RuntimeError('Unable to inspect staged changes.')
     branch=run('git','branch','--show-current',capture=True).stdout.strip()
     if not branch:raise RuntimeError('Detached HEAD: switch to a branch before publishing.')
@@ -109,8 +109,8 @@ def main():
         '-c','credential.https://github.com.helper=!gh auth git-credential','push','-u','origin',branch)
     print('Pushed to https://github.com/'+args.repo+' on '+branch)
     if args.build:
-        run('gh','workflow','run','desktop.yml','--repo',args.repo,'--ref',branch)
-        print('Build requested. Inspect results with: gh run list --repo '+args.repo+' --workflow desktop.yml')
+        run('gh','workflow','run','ci.yml','--repo',args.repo,'--ref',branch)
+        print('Core tests requested. Inspect results with: gh run list --repo '+args.repo+' --workflow ci.yml')
         print('A dispatched build is not proof of a successful or signed installer.')
 
 if __name__=='__main__':

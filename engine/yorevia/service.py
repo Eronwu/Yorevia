@@ -11,7 +11,7 @@ from .baidu_oauth import BaiduOAuth
 METHODS = {'status','vault.open','summary','source.add','scan.start','faces.start','job.status','job.cancel',
            'timeline','people','graph','image','asset.detail','asset.date','asset.path','person.rename',
            'person.merge','person.faces','face.split','relationship.add','story.save','stories','export',
-           'biometrics.erase','baidu.connect','baidu.disconnect','baidu.status','baidu.list','baidu.import','baidu.auth.start','baidu.auth.poll','baidu.auth.cancel'}
+           'biometrics.erase','baidu.connect','baidu.disconnect','baidu.status','baidu.list','baidu.import','baidu.scan_photos','baidu.auth.start','baidu.auth.poll','baidu.auth.cancel'}
 
 
 class Service:
@@ -134,6 +134,16 @@ class Service:
                 return listing
             if not self.baidu: raise ValueError('请先连接百度网盘。')
             if method=='baidu.list': return self.baidu.list(p.get('directory','/'),p.get('page',0))
+            if method=='baidu.scan_photos':
+                client=self.baidu
+                directory=p.get('directory')
+                if not isinstance(directory, str) or len(directory) > 4096:
+                    raise ValueError('网盘目录格式无效。')
+                def scan_photos(progress,cancelled):
+                    account=client.account()
+                    rows=client.scan_photos(directory,progress,cancelled)
+                    return {'cancelled':True,'indexed':0} if rows is None else v.index_baidu_photos(account,rows,cancelled)
+                return self._start(scan_photos)
             if method=='baidu.import':
                 client=self.baidu
                 items=client.selection(p.get('ids'))
@@ -161,7 +171,14 @@ class Service:
         if method=='timeline': return v.timeline(**p)
         if method=='people': return v.people(**p)
         if method=='graph': return v.graph(**p)
-        if method=='image': return v.image(**p)
+        if method=='image':
+            asset_id=p.get('asset_id')
+            remote=v.baidu_photo(asset_id) if asset_id and not p.get('face_id') else None
+            if remote:
+                if not self.baidu or self.baidu.account() != remote['account']:
+                    raise ValueError('请连接索引这些照片时使用的百度网盘账户。')
+                return self.baidu.photo_preview(remote,p.get('variant','grid'))
+            return v.image(asset_id=asset_id,face_id=p.get('face_id'))
         if method=='asset.detail': return v.detail(p['asset_id'])
         if method=='asset.path': return {'path':str(v.asset_path(p['asset_id']))}
         if method=='asset.date': return v.set_date(p['asset_id'],p.get('date'))

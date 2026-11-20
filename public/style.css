@@ -5,3 +5,5 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 /* Language controls use the same local-first form styling on welcome and settings. */
 .language-picker{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--ink);margin-bottom:24px}.language-picker select{width:auto;min-width:150px;padding:9px 12px;border:1px solid #ced8c0;border-radius:5px;background:var(--paper);color:inherit;font:inherit}html[lang="en"] .welcome h1{max-width:620px;letter-spacing:-1px}html[lang="en"] .page-heading h1{letter-spacing:-.6px}html[lang="en"] .year-nav .year{white-space:normal}html[lang="en"] .topbar{gap:16px}html[lang="en"] .breadcrumb{min-width:0}
+
+.detail-photo[data-remote-photo]{min-height:140px}.detail-photo[data-remote-photo].failed{display:none}[data-action="retry-remote-photo"][hidden]{display:none}

@@ -205,13 +205,39 @@ class Vault:
             params.extend([f'%{escaped}%']*4)
         return ' AND '.join(terms) or '1=1', params
 
+    def index_baidu_photos(self, account, items, cancelled):
+        with self.db() as db:
+            for item in items:
+                if cancelled():
+                    db.rollback()
+                    return {'cancelled': True, 'indexed': 0}
+                existing = db.execute('SELECT asset_id FROM baidu_photos WHERE account=? AND fsid=?', (account,item['id'])).fetchone()
+                if existing:
+                    asset = existing['asset_id']
+                    db.execute('UPDATE assets SET title=? WHERE id=?', (Path(item['name']).stem,asset))
+                    db.execute('UPDATE baidu_photos SET path=?,size=?,mtime=? WHERE asset_id=?', (item['path'],item['size'],item['mtime'],asset))
+                else:
+                    asset = uid()
+                    db.execute("INSERT INTO assets(id,kind,title,created_at) VALUES(?,'photo',?,?)", (asset,Path(item['name']).stem,now()))
+                    db.execute('INSERT INTO baidu_photos(asset_id,account,fsid,path,size,mtime) VALUES(?,?,?,?,?,?)', (asset,account,item['id'],item['path'],item['size'],item['mtime']))
+            if cancelled():
+                db.rollback()
+                return {'cancelled': True, 'indexed': 0}
+        return {'cancelled': False, 'indexed': len(items)}
+
+    def baidu_photo(self, asset_id):
+        with self.db() as db:
+            row = db.execute('SELECT * FROM baidu_photos WHERE asset_id=?', (asset_id,)).fetchone()
+            return dict(row) if row else None
+
     def timeline(self, **filters) -> dict:
         where, params = self._filter(filters)
         limit, offset = min(max(int(filters.get('limit', 60)), 1), 120), max(int(filters.get('offset', 0)), 0)
         with self.db() as db:
             total = db.execute(f'SELECT count(*) FROM assets a WHERE {where}', params).fetchone()[0]
             rows = db.execute(f'''SELECT a.id,a.kind,a.title,a.captured_at,a.date_source,a.width,a.height,a.thumb,
-                EXISTS(SELECT 1 FROM locations l WHERE l.asset_id=a.id AND l.available=1) AS available,
+                (EXISTS(SELECT 1 FROM locations l WHERE l.asset_id=a.id AND l.available=1) OR EXISTS(SELECT 1 FROM baidu_photos b WHERE b.asset_id=a.id)) AS available,
+                EXISTS(SELECT 1 FROM baidu_photos b WHERE b.asset_id=a.id) AS remote_photo,
                 (SELECT count(DISTINCT person_id) FROM faces f WHERE f.asset_id=a.id AND f.ignored=0) AS people_count,
                 (SELECT count(*) FROM story_assets s WHERE s.asset_id=a.id) AS story_count
                 FROM assets a WHERE {where} ORDER BY a.captured_at IS NULL,a.captured_at DESC,a.id LIMIT ? OFFSET ?''', params+[limit,offset]).fetchall()
@@ -249,10 +275,14 @@ class Vault:
             if not row:
                 raise ValueError('资料不存在')
             item = dict(row)
+            remote = db.execute('SELECT path FROM baidu_photos WHERE asset_id=?', (asset_id,)).fetchone()
+            item['remote_photo'] = bool(remote)
             item['faces'] = [dict(r) for r in db.execute('''SELECT f.id,f.person_id,f.confidence,p.name,f.locked FROM faces f
                  JOIN people p ON p.id=f.person_id WHERE f.asset_id=? AND f.ignored=0''', (asset_id,))]
             item['stories'] = [dict(r) for r in db.execute('SELECT s.* FROM stories s JOIN story_assets sa ON sa.story_id=s.id WHERE sa.asset_id=? ORDER BY s.created_at', (asset_id,))]
             item['locations'] = [dict(r) for r in db.execute('SELECT s.name,l.relative_path,l.available FROM locations l JOIN sources s ON s.id=l.source_id WHERE l.asset_id=?', (asset_id,))]
+            if remote:
+                item['locations'].append({'name':'Baidu Netdisk','relative_path':remote['path'].lstrip('/'),'available':1})
             return item
 
     def set_date(self, asset_id: str, date: str | None) -> dict:

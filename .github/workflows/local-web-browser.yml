@@ -1,0 +1,38 @@
+name: Local Web browser smoke
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/local-web-browser.yml
+      - engine/**
+      - public/**
+      - src/**
+      - scripts/**
+      - package*.json
+      - requirements*.txt
+permissions:
+  contents: read
+jobs:
+  synthetic-loopback-browser:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-dev.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Browser QA, synthetic records only
+        run: python scripts/check_local_web_browser.py --screenshot /tmp/yorevia-local-web-test.png
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: yorevia-local-web-synthetic-browser
+          path: /tmp/yorevia-local-web-test.png
+          retention-days: 3

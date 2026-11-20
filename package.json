@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json && node scripts/copy_static.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "node --test tests/frontend.test.mjs tests/i18n.test.mjs",
-    "preview": "python scripts/preview.py",
+    "preview": "python scripts/launch_local_web.py",
+    "preview:dev": "python scripts/preview.py",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "python scripts/build_sidecar.py && tauri build --config src-tauri/tauri.release.conf.json"
